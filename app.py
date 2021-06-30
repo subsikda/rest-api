@@ -1,13 +1,21 @@
 from flask import Flask, request
 from flask_restful import Resource, Api
+from flask_jwt import JWT, jwt_required
+
+from security import authenticate, identity
 
 app = Flask(__name__)
+app.secret_key = 'jose'
 api = Api(app)
 
 items = []
 
+# /auth endpoint returns JWT token
+jwt = JWT(app,authenticate,identity)
+
 # Requests for specific item 
 class Item(Resource):
+    @jwt_required()
     def get(self,name):
         #filter item from list of items
         #next returns first occurence of the item else error
@@ -23,9 +31,11 @@ class Item(Resource):
 
         # accessing json payload from requests
         data = request.get_json() # expects client give json in request else errors.
-        # to avoid error use
-        # request.get_json(force=True) --> don't look at header, always do processing.
-        # request.get_json(silent=True) --> returns none incase of error
+        """ 
+        to avoid error:
+        request.get_json(force=True) --> don't look at header, always do processing.
+        request.get_json(silent=True) --> returns none incase of error
+        """
         item = {"name":name,"price":data["price"]}
         items.append(item)
         return item, 201
